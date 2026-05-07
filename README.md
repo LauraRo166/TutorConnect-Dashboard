@@ -6,11 +6,11 @@ Admin KPI dashboard for the TutorConnect platform. Provides real-time business m
 
 ### Overview — KPIs & Activity Charts
 
-<!-- Paste screenshot 1 here -->
+<img width="2797" height="1460" alt="Captura de pantalla 2026-05-06 234245" src="https://github.com/user-attachments/assets/c89973ee-6f4f-4369-a984-1cbd9fa3e684" />
 
 ### Satisfaction, Top Tutors & Session Status
 
-<!-- Paste screenshot 2 here -->
+<img width="2815" height="1466" alt="Captura de pantalla 2026-05-06 234316" src="https://github.com/user-attachments/assets/3bc6c5cf-2265-49a7-ab28-65273e5fad7a" />
 
 ---
 
