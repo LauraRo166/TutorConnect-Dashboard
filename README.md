@@ -1,36 +1,183 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TutorConnect Dashboard
+
+Admin KPI dashboard for the TutorConnect platform. Provides real-time business metrics — sessions, revenue, NPS, and user growth — with date range filtering and role-based access control.
+
+## Screenshots
+
+### Overview — KPIs & Activity Charts
+
+<!-- Paste screenshot 1 here -->
+
+### Satisfaction, Top Tutors & Session Status
+
+<!-- Paste screenshot 2 here -->
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Auth | Clerk (`@clerk/nextjs`) |
+| Data fetching | TanStack Query v5 |
+| HTTP client | Axios |
+| Charts | Recharts v3 |
+| UI components | shadcn/ui |
+
+---
+
+## Prerequisites
+
+- Node.js 20+
+- [TutorConnect-Backend](https://github.com/IETI-TutorConnect/TutorConnect-Backend) running on `http://localhost:3000`
+- PostgreSQL with the backend schema initialized
+- A Clerk application (same one used by the backend)
+
+---
+
+## Environment Setup
+
+Create a `.env.local` file at the project root:
+
+```env
+# Clerk — same app as the backend
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+
+# Clerk routes
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL=/login
+
+# Backend API
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
+```
+
+---
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3001](http://localhost:3001).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> The dashboard runs on port **3001** to avoid conflicts with the backend on 3000. Set the port with:
+> ```bash
+> PORT=3001 npm run dev
+> ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Admin Access Setup
 
-To learn more about Next.js, take a look at the following resources:
+The dashboard is restricted to users with the `ADMIN` role. To grant access to your account:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**1. Sign in to the dashboard** with your Google or Clerk account and note the Clerk user ID from the Clerk Dashboard (format: `user_XXXXXXXXXXXXXXXXXXXX`).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**2. Register the user in the database** with the `ADMIN` role:
 
-## Deploy on Vercel
+```sql
+INSERT INTO "user" (clerk_id, email, first_name, last_name, role, status)
+VALUES (
+  'user_XXXXXXXXXXXXXXXXXXXX',
+  'your@email.com',
+  'First',
+  'Last',
+  'ADMIN',
+  'ACTIVE'
+);
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+If the user already exists (created via webhook) just update the role:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```sql
+UPDATE "user"
+SET role = 'ADMIN'
+WHERE clerk_id = 'user_XXXXXXXXXXXXXXXXXXXX';
+```
+
+**3. Sign in again** — the dashboard will now grant access.
+
+---
+
+## Loading Demo Data
+
+A seed script is included to populate the database with 30 days of realistic data (5 tutors, 25 learners, 150 sessions, payments, and reviews).
+
+### Run via Docker (recommended)
+
+```bash
+# Copy the file into the container
+docker cp seed_dashboard.sql <your-postgres-container>:/tmp/seed.sql
+
+# Execute it
+docker exec <your-postgres-container> psql -U postgres -d tutorconnect -f /tmp/seed.sql
+```
+
+Replace `<your-postgres-container>` with your actual container name (e.g. `tutorconnect-postgres-dev`).
+
+### Run via Node.js (alternative — no psql required)
+
+```bash
+node -e "
+const { spawnSync } = require('child_process');
+const fs = require('fs');
+const sql = fs.readFileSync('seed_dashboard.sql', 'utf8');
+const res = spawnSync('docker', ['exec', '-i', '<your-postgres-container>', 'psql', '-U', 'postgres', '-d', 'tutorconnect'], {
+  input: sql, encoding: 'utf8', timeout: 60000
+});
+console.log(res.stdout);
+console.log(res.stderr);
+"
+```
+
+The seed inserts:
+
+| Table | Records |
+|---|---|
+| `user` (TUTOR role) | 5 |
+| `tutors` | 5 |
+| `user` (LEARNER role) | 25 |
+| `bookings` | ~150 (trending upward over 30 days) |
+| `payment` | ~128 (COMPLETED) |
+| `review` | ~98 (avg rating 4.1 ★) |
+
+---
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── layout.tsx                  # ClerkProvider + ReactQueryProvider
+│   ├── page.tsx                    # Redirects based on auth state
+│   ├── (auth)/login/               # Clerk SignIn component
+│   └── (admin)/
+│       ├── layout.tsx              # Role verification (server component)
+│       └── dashboard/page.tsx      # Main dashboard page
+├── components/
+│   ├── layout/                     # AdminSidebar, AdminTopBar
+│   └── dashboard/                  # KpiCard, charts, table, date picker
+└── lib/
+    ├── api/                        # Axios instance + admin endpoints
+    ├── hooks/                      # useAdminMetrics (React Query)
+    ├── types/                      # TypeScript interfaces
+    └── utils/                      # Currency and date formatters
+```
+
+---
+
+## Backend Dependency
+
+This dashboard consumes `GET /api/admin/metrics` from TutorConnect-Backend. The endpoint requires:
+
+- A valid Clerk JWT in the `Authorization: Bearer <token>` header
+- The authenticated user to have `role = 'ADMIN'` in the database
+
+See the backend PR `feature/admin-dashboard-metrics` for the implementation details.
