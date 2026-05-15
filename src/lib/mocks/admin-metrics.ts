@@ -126,10 +126,10 @@ export function generateMockMetrics(params: MetricsQueryParams): AdminMetrics {
       completionRate: Math.round((completedSessions / totalSessions) * 100),
       byDay: dates.map((date, i) => ({ date, count: sessionCounts[i] })),
       byStatus: [
-        { status: 'COMPLETED', count: completedSessions },
-        { status: 'CONFIRMED', count: Math.max(0, confirmedSessions) },
-        { status: 'CANCELLED', count: cancelledSessions },
-        { status: 'PENDING', count: pendingSessions },
+        { status: 'completed', count: completedSessions },
+        { status: 'confirmed', count: Math.max(0, confirmedSessions) },
+        { status: 'cancelled', count: cancelledSessions },
+        { status: 'pending', count: pendingSessions },
       ],
     },
 
@@ -143,8 +143,8 @@ export function generateMockMetrics(params: MetricsQueryParams): AdminMetrics {
         commission: Math.round(grossAmounts[i] * (DB_BASE.revenue.commission / DB_BASE.revenue.gross)),
       })),
       byPaymentStatus: [
-        { status: 'COMPLETED', count: completedSessions },
-        { status: 'PENDING', count: pendingSessions },
+        { status: 'completed', count: completedSessions },
+        { status: 'pending', count: pendingSessions },
       ],
     },
 
