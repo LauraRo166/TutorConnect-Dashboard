@@ -12,7 +12,6 @@ Admin KPI dashboard for the TutorConnect platform. Provides real-time business m
 <img width="2815" height="1466" alt="Captura de pantalla 2026-05-06 234316" src="https://github.com/user-attachments/assets/3bc6c5cf-2265-49a7-ab28-65273e5fad7a" />
 
 ---
-
 ## Tech Stack
 
 | Layer | Technology |
