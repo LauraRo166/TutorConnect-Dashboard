@@ -16,6 +16,7 @@ const DB_BASE = {
   ],
 } as const;
 
+
 function getDates(from: string, to: string): string[] {
   const dates: string[] = [];
   const d = new Date(from + 'T12:00:00');
