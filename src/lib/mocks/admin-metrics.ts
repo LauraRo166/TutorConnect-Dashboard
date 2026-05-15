@@ -1,193 +1,160 @@
-import { AdminMetrics } from '@/lib/types/admin-metrics';
+import { AdminMetrics, MetricsQueryParams } from '@/lib/types/admin-metrics';
 
-function daysBack(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().split('T')[0];
+// Real values from DB (tutorconnect @ localhost:5432), used as 30-day baseline
+const DB_BASE = {
+  tutors: 7,
+  learners: 5,
+  sessions: { total: 22, completed: 11, confirmed: 9, cancelled: 1, pending: 1 },
+  revenue: { gross: 565_000, commission: 84_750 },
+  reviews: { total: 8, avg: 4.75, dist: { 1: 0, 2: 0, 3: 0, 4: 2, 5: 6 } },
+  topTutors: [
+    { tutorId: '587f32c4-18a8-43c3-a708-f4d94ba7ac68', name: 'Laura Rodríguez',  gross: 1_360_000, commission: 204_000, sessions: 12, avgRating: 4.75 },
+    { tutorId: 'bdf22f9b-2be0-40f6-a407-d7420b183807', name: 'Elena Rodríguez',  gross:   260_000, commission:  39_000, sessions:  6, avgRating: 4.5  },
+    { tutorId: '805ea94a-54ea-43ab-a00d-738e6e2048c4', name: 'Marcos Santos',    gross:   190_000, commission:  28_500, sessions:  4, avgRating: 5.0  },
+    { tutorId: '7e45cde8-afd9-4aca-a9cc-9346837b7c75', name: 'Javier Ruiz',      gross:    75_000, commission:  11_250, sessions:  2, avgRating: 4.0  },
+    { tutorId: '214e57a7-191d-4fb3-921a-da80083df64c', name: 'Sofía Mendoza',    gross:    50_000, commission:   7_500, sessions:  1, avgRating: null },
+  ],
+} as const;
+
+function getDates(from: string, to: string): string[] {
+  const dates: string[] = [];
+  const d = new Date(from + 'T12:00:00');
+  const end = new Date(to + 'T12:00:00');
+  while (d <= end) {
+    dates.push(d.toISOString().split('T')[0]);
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
 }
 
-export const MOCK_ADMIN_METRICS: AdminMetrics = {
-  generatedAt: new Date().toISOString(),
-  period: { from: daysBack(29), to: daysBack(0) },
+// Weekday weight: Mon-Thu peak, Fri lighter, weekend low
+function dayWeight(dateStr: string): number {
+  const dow = new Date(dateStr + 'T12:00:00').getDay();
+  return [0.35, 1.25, 1.30, 1.20, 1.10, 0.90, 0.40][dow];
+}
 
-  users: {
-    totalTutors: 48,
-    totalLearners: 234,
-    totalUsers: 282,
-    newThisWeek: 14,
-    newThisMonth: 47,
-    growthByDay: [
-      { date: daysBack(29), tutors: 0, learners: 2 },
-      { date: daysBack(28), tutors: 1, learners: 3 },
-      { date: daysBack(27), tutors: 0, learners: 5 },
-      { date: daysBack(26), tutors: 1, learners: 4 },
-      { date: daysBack(25), tutors: 0, learners: 6 },
-      { date: daysBack(24), tutors: 2, learners: 3 },
-      { date: daysBack(23), tutors: 0, learners: 7 },
-      { date: daysBack(22), tutors: 1, learners: 4 },
-      { date: daysBack(21), tutors: 0, learners: 5 },
-      { date: daysBack(20), tutors: 1, learners: 8 },
-      { date: daysBack(19), tutors: 0, learners: 6 },
-      { date: daysBack(18), tutors: 2, learners: 3 },
-      { date: daysBack(17), tutors: 0, learners: 9 },
-      { date: daysBack(16), tutors: 1, learners: 7 },
-      { date: daysBack(15), tutors: 0, learners: 5 },
-      { date: daysBack(14), tutors: 1, learners: 4 },
-      { date: daysBack(13), tutors: 0, learners: 8 },
-      { date: daysBack(12), tutors: 2, learners: 6 },
-      { date: daysBack(11), tutors: 0, learners: 5 },
-      { date: daysBack(10), tutors: 1, learners: 7 },
-      { date: daysBack(9), tutors: 0, learners: 9 },
-      { date: daysBack(8), tutors: 1, learners: 6 },
-      { date: daysBack(7), tutors: 0, learners: 8 },
-      { date: daysBack(6), tutors: 2, learners: 5 },
-      { date: daysBack(5), tutors: 0, learners: 7 },
-      { date: daysBack(4), tutors: 1, learners: 6 },
-      { date: daysBack(3), tutors: 0, learners: 8 },
-      { date: daysBack(2), tutors: 1, learners: 9 },
-      { date: daysBack(1), tutors: 0, learners: 7 },
-      { date: daysBack(0), tutors: 1, learners: 5 },
-    ],
-  },
+function distribute(total: number, dates: string[]): number[] {
+  const weights = dates.map(dayWeight);
+  const sum = weights.reduce((a, b) => a + b, 0);
+  let remaining = Math.round(total);
+  const result = weights.map((w, i) => {
+    const v = i === weights.length - 1 ? remaining : Math.round(total * w / sum);
+    remaining -= v;
+    return Math.max(0, v);
+  });
+  return result;
+}
 
-  sessions: {
-    total: 187,
-    completed: 163,
-    completionRate: 87,
-    byDay: [
-      { date: daysBack(29), count: 3 },
-      { date: daysBack(28), count: 5 },
-      { date: daysBack(27), count: 4 },
-      { date: daysBack(26), count: 6 },
-      { date: daysBack(25), count: 8 },
-      { date: daysBack(24), count: 5 },
-      { date: daysBack(23), count: 7 },
-      { date: daysBack(22), count: 9 },
-      { date: daysBack(21), count: 6 },
-      { date: daysBack(20), count: 4 },
-      { date: daysBack(19), count: 8 },
-      { date: daysBack(18), count: 10 },
-      { date: daysBack(17), count: 7 },
-      { date: daysBack(16), count: 5 },
-      { date: daysBack(15), count: 9 },
-      { date: daysBack(14), count: 6 },
-      { date: daysBack(13), count: 8 },
-      { date: daysBack(12), count: 11 },
-      { date: daysBack(11), count: 7 },
-      { date: daysBack(10), count: 5 },
-      { date: daysBack(9), count: 9 },
-      { date: daysBack(8), count: 8 },
-      { date: daysBack(7), count: 6 },
-      { date: daysBack(6), count: 10 },
-      { date: daysBack(5), count: 7 },
-      { date: daysBack(4), count: 9 },
-      { date: daysBack(3), count: 5 },
-      { date: daysBack(2), count: 8 },
-      { date: daysBack(1), count: 6 },
-      { date: daysBack(0), count: 4 },
-    ],
-    byStatus: [
-      { status: 'COMPLETED', count: 163 },
-      { status: 'CANCELLED', count: 14 },
-      { status: 'PENDING', count: 10 },
-    ],
-  },
+// last-month gets 0.82x (platform was smaller); custom ranges get neutral 1x
+function periodMultiplier(from: string, to: string, days: number): number {
+  const today = new Date().toISOString().split('T')[0];
+  const toDate = new Date(to + 'T12:00:00');
+  const todayDate = new Date(today + 'T12:00:00');
+  const isHistorical = toDate < todayDate;
+  return isHistorical ? 0.82 : 1;
+}
 
-  revenue: {
-    grossTotal: 46800000,
-    commissionTotal: 4680000,
-    currency: 'COP',
-    byDay: [
-      { date: daysBack(29), gross: 900000, commission: 90000 },
-      { date: daysBack(28), gross: 1500000, commission: 150000 },
-      { date: daysBack(27), gross: 1200000, commission: 120000 },
-      { date: daysBack(26), gross: 1800000, commission: 180000 },
-      { date: daysBack(25), gross: 2400000, commission: 240000 },
-      { date: daysBack(24), gross: 1500000, commission: 150000 },
-      { date: daysBack(23), gross: 2100000, commission: 210000 },
-      { date: daysBack(22), gross: 2700000, commission: 270000 },
-      { date: daysBack(21), gross: 1800000, commission: 180000 },
-      { date: daysBack(20), gross: 1200000, commission: 120000 },
-      { date: daysBack(19), gross: 2400000, commission: 240000 },
-      { date: daysBack(18), gross: 3000000, commission: 300000 },
-      { date: daysBack(17), gross: 2100000, commission: 210000 },
-      { date: daysBack(16), gross: 1500000, commission: 150000 },
-      { date: daysBack(15), gross: 2700000, commission: 270000 },
-      { date: daysBack(14), gross: 1800000, commission: 180000 },
-      { date: daysBack(13), gross: 2400000, commission: 240000 },
-      { date: daysBack(12), gross: 3300000, commission: 330000 },
-      { date: daysBack(11), gross: 2100000, commission: 210000 },
-      { date: daysBack(10), gross: 1500000, commission: 150000 },
-      { date: daysBack(9), gross: 2700000, commission: 270000 },
-      { date: daysBack(8), gross: 2400000, commission: 240000 },
-      { date: daysBack(7), gross: 1800000, commission: 180000 },
-      { date: daysBack(6), gross: 3000000, commission: 300000 },
-      { date: daysBack(5), gross: 2100000, commission: 210000 },
-      { date: daysBack(4), gross: 2700000, commission: 270000 },
-      { date: daysBack(3), gross: 1500000, commission: 150000 },
-      { date: daysBack(2), gross: 2400000, commission: 240000 },
-      { date: daysBack(1), gross: 1800000, commission: 180000 },
-      { date: daysBack(0), gross: 1200000, commission: 120000 },
-    ],
-    byPaymentStatus: [
-      { status: 'PAID', count: 163 },
-      { status: 'PENDING', count: 24 },
-    ],
-  },
+export function generateMockMetrics(params: MetricsQueryParams): AdminMetrics {
+  const dates = getDates(params.from, params.to);
+  const days = dates.length;
+  const scale = (days / 30) * periodMultiplier(params.from, params.to, days);
 
-  nps: {
-    score: 54,
-    averageRating: 4.3,
-    totalReviews: 112,
-    distribution: [
-      { rating: 1, count: 3, percentage: 2.7 },
-      { rating: 2, count: 5, percentage: 4.5 },
-      { rating: 3, count: 12, percentage: 10.7 },
-      { rating: 4, count: 38, percentage: 33.9 },
-      { rating: 5, count: 54, percentage: 48.2 },
-    ],
-  },
+  const totalSessions = Math.max(1, Math.round(DB_BASE.sessions.total * scale));
+  const completedSessions = Math.round(totalSessions * (DB_BASE.sessions.completed / DB_BASE.sessions.total));
+  const cancelledSessions = Math.max(0, Math.round(totalSessions * (DB_BASE.sessions.cancelled / DB_BASE.sessions.total)));
+  const pendingSessions = Math.max(0, Math.round(totalSessions * (DB_BASE.sessions.pending / DB_BASE.sessions.total)));
+  const confirmedSessions = totalSessions - completedSessions - cancelledSessions - pendingSessions;
 
-  topTutors: [
-    {
-      tutorId: 'tutor-001',
-      name: 'Andrés Martínez',
-      grossRevenue: 8400000,
-      commission: 840000,
-      sessionsCount: 28,
-      averageRating: 4.8,
+  const grossTotal = Math.round(DB_BASE.revenue.gross * scale);
+  const commissionTotal = Math.round(DB_BASE.revenue.commission * scale);
+
+  const totalReviews = Math.max(0, Math.round(DB_BASE.reviews.total * scale));
+  const npsScore = 75; // (6/8 promoters) - 0 detractors = 75
+
+  // Distribute sessions by day
+  const sessionCounts = distribute(totalSessions, dates);
+  const grossAmounts = distribute(grossTotal, dates);
+
+  // User growth: distribute new users (some days get 0, some 1-2)
+  const newTutors = Math.max(0, Math.round(DB_BASE.tutors * scale * 0.4));
+  const newLearners = Math.max(0, Math.round(DB_BASE.learners * scale * 0.4));
+  const tutorCounts = distribute(newTutors, dates);
+  const learnerCounts = distribute(newLearners, dates);
+
+  // NPS distribution scaled
+  const distScale = totalReviews / DB_BASE.reviews.total;
+  const npsDistribution = [1, 2, 3, 4, 5].map((rating) => {
+    const base = DB_BASE.reviews.dist[rating as keyof typeof DB_BASE.reviews.dist];
+    const count = Math.round(base * distScale);
+    return {
+      rating,
+      count,
+      percentage: totalReviews > 0 ? Math.round((count / totalReviews) * 1000) / 10 : 0,
+    };
+  });
+
+  // Top tutors scaled
+  const topTutors = DB_BASE.topTutors.map((t) => ({
+    tutorId: t.tutorId,
+    name: t.name,
+    grossRevenue: Math.round(t.gross * scale),
+    commission: Math.round(t.commission * scale),
+    sessionsCount: Math.max(0, Math.round(t.sessions * scale)),
+    averageRating: t.avgRating,
+  }));
+
+  return {
+    generatedAt: new Date().toISOString(),
+    period: { from: params.from, to: params.to },
+
+    users: {
+      totalTutors: DB_BASE.tutors,
+      totalLearners: DB_BASE.learners,
+      totalUsers: DB_BASE.tutors + DB_BASE.learners,
+      newThisWeek: Math.max(1, Math.round((DB_BASE.tutors + DB_BASE.learners) * (7 / 30) * 0.4)),
+      newThisMonth: Math.max(1, Math.round((DB_BASE.tutors + DB_BASE.learners) * 0.4)),
+      growthByDay: dates.map((date, i) => ({
+        date,
+        tutors: tutorCounts[i],
+        learners: learnerCounts[i],
+      })),
     },
-    {
-      tutorId: 'tutor-002',
-      name: 'Valentina Ríos',
-      grossRevenue: 7200000,
-      commission: 720000,
-      sessionsCount: 24,
-      averageRating: 4.6,
+
+    sessions: {
+      total: totalSessions,
+      completed: completedSessions,
+      completionRate: Math.round((completedSessions / totalSessions) * 100),
+      byDay: dates.map((date, i) => ({ date, count: sessionCounts[i] })),
+      byStatus: [
+        { status: 'COMPLETED', count: completedSessions },
+        { status: 'CONFIRMED', count: Math.max(0, confirmedSessions) },
+        { status: 'CANCELLED', count: cancelledSessions },
+        { status: 'PENDING', count: pendingSessions },
+      ],
     },
-    {
-      tutorId: 'tutor-003',
-      name: 'Sebastián López',
-      grossRevenue: 6300000,
-      commission: 630000,
-      sessionsCount: 21,
-      averageRating: 4.5,
+
+    revenue: {
+      grossTotal,
+      commissionTotal,
+      currency: 'COP',
+      byDay: dates.map((date, i) => ({
+        date,
+        gross: grossAmounts[i],
+        commission: Math.round(grossAmounts[i] * (DB_BASE.revenue.commission / DB_BASE.revenue.gross)),
+      })),
+      byPaymentStatus: [
+        { status: 'COMPLETED', count: completedSessions },
+        { status: 'PENDING', count: pendingSessions },
+      ],
     },
-    {
-      tutorId: 'tutor-004',
-      name: 'Camila Torres',
-      grossRevenue: 5400000,
-      commission: 540000,
-      sessionsCount: 18,
-      averageRating: 4.4,
+
+    nps: {
+      score: npsScore,
+      averageRating: DB_BASE.reviews.avg,
+      totalReviews,
+      distribution: npsDistribution,
     },
-    {
-      tutorId: 'tutor-005',
-      name: 'Felipe Gómez',
-      grossRevenue: 4500000,
-      commission: 450000,
-      sessionsCount: 15,
-      averageRating: 4.2,
-    },
-  ],
-};
+
+    topTutors,
+  };
+}

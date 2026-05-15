@@ -1,11 +1,11 @@
 'use client';
 
-import { MOCK_ADMIN_METRICS } from '@/lib/mocks/admin-metrics';
+import { generateMockMetrics } from '@/lib/mocks/admin-metrics';
 import { MetricsQueryParams } from '@/lib/types/admin-metrics';
 
-export function useAdminMetrics(_params: MetricsQueryParams) {
+export function useAdminMetrics(params: MetricsQueryParams) {
   return {
-    data: MOCK_ADMIN_METRICS,
+    data: generateMockMetrics(params),
     isLoading: false,
     isError: false,
     isFetching: false,
