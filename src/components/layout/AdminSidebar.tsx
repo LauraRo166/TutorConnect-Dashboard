@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, LayoutDashboard, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, TrendingUp } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Vista general' },
-  { href: '/metrics', label: 'Métricas', icon: BarChart3, description: 'Análisis detallado' },
 ];
 
 export function AdminSidebar() {
