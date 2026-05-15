@@ -3,7 +3,6 @@
 Admin KPI dashboard for the TutorConnect platform. Provides real-time business metrics — sessions, revenue, NPS, and user growth — with date range filtering and role-based access control.
 
 ## Screenshots
-
 ### Overview — KPIs & Activity Charts
 
 <img width="2797" height="1460" alt="Captura de pantalla 2026-05-06 234245" src="https://github.com/user-attachments/assets/c89973ee-6f4f-4369-a984-1cbd9fa3e684" />
