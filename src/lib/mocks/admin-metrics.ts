@@ -1,14 +1,14 @@
 import { AdminMetrics } from '@/lib/types/admin-metrics';
 
 function daysBack(n: number): string {
-  const d = new Date('2026-05-14');
+  const d = new Date();
   d.setDate(d.getDate() - n);
   return d.toISOString().split('T')[0];
 }
 
 export const MOCK_ADMIN_METRICS: AdminMetrics = {
-  generatedAt: '2026-05-14T10:32:00.000Z',
-  period: { from: '2026-04-14', to: '2026-05-14' },
+  generatedAt: new Date().toISOString(),
+  period: { from: daysBack(29), to: daysBack(0) },
 
   users: {
     totalTutors: 48,
