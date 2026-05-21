@@ -41,9 +41,9 @@ export function TopTutorsTable({ data, isLoading }: TopTutorsTableProps) {
           Sin datos para el período seleccionado
         </div>
       ) : (
-        <div className="px-3 pb-4 space-y-1">
+        <div className="px-3 pb-4 space-y-1 overflow-x-auto">
           {/* Header row */}
-          <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 px-3 py-1.5">
+          <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 px-3 py-1.5 min-w-[420px]">
             <span className="text-xs font-bold uppercase tracking-wide text-slate-400 w-6">#</span>
             <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Tutor</span>
             <span className="text-xs font-bold uppercase tracking-wide text-slate-400 text-right w-14">Ses.</span>
@@ -56,7 +56,7 @@ export function TopTutorsTable({ data, isLoading }: TopTutorsTableProps) {
             return (
               <div
                 key={tutor.tutorId}
-                className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 items-center px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 items-center px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors min-w-[420px]"
               >
                 <div className="w-6 flex-shrink-0 text-center">
                   {medal ? (

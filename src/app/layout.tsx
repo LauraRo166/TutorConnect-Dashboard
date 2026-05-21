@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: '--font-plus-jakarta-sans',
   subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
 });
 
 export const metadata: Metadata = {
@@ -19,7 +20,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <html lang="es" className={`${geistSans.variable} h-full antialiased`}>
+      <html lang="es" className={`${plusJakartaSans.variable} h-full antialiased`}>
         <body className="min-h-full bg-background text-foreground">
           <ReactQueryProvider>{children}</ReactQueryProvider>
         </body>

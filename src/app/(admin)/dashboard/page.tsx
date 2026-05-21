@@ -40,7 +40,7 @@ export default function DashboardPage() {
         }
       />
 
-      <main className="flex-1 px-6 py-5 space-y-6">
+      <main className="flex-1 px-4 md:px-6 py-5 space-y-6">
         {isError && (
           <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 font-medium flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" />
@@ -49,7 +49,7 @@ export default function DashboardPage() {
         )}
 
         {/* Controls bar */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <SectionHeader title="Período de análisis" description="Filtra todas las métricas por rango de fechas" />
           <div className="flex items-center gap-2">
             <button
@@ -67,7 +67,7 @@ export default function DashboardPage() {
         {/* KPI Cards */}
         <section className="space-y-3">
           <SectionHeader title="Indicadores clave" description="Resumen del negocio para el período seleccionado" />
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {isLoading ? (
               <>
                 <KpiCardSkeleton />
