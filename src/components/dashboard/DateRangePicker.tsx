@@ -1,6 +1,7 @@
 'use client';
 
 import { Calendar } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { DatePreset, getPresetRange, toISODate } from '@/lib/utils/format-date';
 import { MetricsQueryParams } from '@/lib/types/admin-metrics';
 
@@ -17,7 +18,8 @@ interface DateRangePickerProps {
 }
 
 export function DateRangePicker({ params, onParamsChange }: DateRangePickerProps) {
-  const today = toISODate(new Date());
+  const [today, setToday] = useState('');
+  useEffect(() => { setToday(toISODate(new Date())); }, []);
 
   const activePreset = PRESETS.find((p) => {
     const range = getPresetRange(p.value);

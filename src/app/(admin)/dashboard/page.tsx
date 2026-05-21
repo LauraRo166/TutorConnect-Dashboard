@@ -1,20 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { BookOpen, DollarSign, Star, Users, RefreshCw } from 'lucide-react';
+import { BookOpen, RefreshCw, Users, GraduationCap, UserCheck } from 'lucide-react';
 import { AdminTopBar } from '@/components/layout/AdminTopBar';
 import { KpiCard, KpiCardSkeleton } from '@/components/dashboard/KpiCard';
 import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
-import { SessionsChart } from '@/components/dashboard/SessionsChart';
-import { RevenueChart } from '@/components/dashboard/RevenueChart';
-import { NpsChart } from '@/components/dashboard/NpsChart';
-import { UserGrowthChart } from '@/components/dashboard/UserGrowthChart';
-import { BookingStatusChart } from '@/components/dashboard/BookingStatusChart';
-import { TopTutorsTable } from '@/components/dashboard/TopTutorsTable';
 import { useAdminMetrics } from '@/lib/hooks/useAdminMetrics';
 import { MetricsQueryParams } from '@/lib/types/admin-metrics';
 import { getPresetRange } from '@/lib/utils/format-date';
-import { formatCOPCompact } from '@/lib/utils/format-currency';
 
 function SectionHeader({ title, description }: { title: string; description?: string }) {
   return (
@@ -33,11 +26,7 @@ export default function DashboardPage() {
     <div className="flex flex-col min-h-screen">
       <AdminTopBar
         title="Dashboard"
-        subtitle={
-          data
-            ? `Actualizado ${new Date(data.generatedAt).toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit' })}`
-            : 'Cargando métricas...'
-        }
+        subtitle={data ? 'Datos actualizados' : 'Cargando métricas...'}
       />
 
       <main className="flex-1 px-4 md:px-6 py-5 space-y-6">
@@ -66,7 +55,7 @@ export default function DashboardPage() {
 
         {/* KPI Cards */}
         <section className="space-y-3">
-          <SectionHeader title="Indicadores clave" description="Resumen del negocio para el período seleccionado" />
+          <SectionHeader title="Indicadores clave" description="Resumen de usuarios y cursos en la plataforma" />
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {isLoading ? (
               <>
@@ -78,73 +67,31 @@ export default function DashboardPage() {
             ) : data ? (
               <>
                 <KpiCard
-                  title="Sesiones totales"
-                  value={data.sessions.total.toLocaleString('es-CO')}
-                  subtitle={`${data.sessions.completionRate}% tasa de completitud`}
-                  icon={<BookOpen />}
+                  title="Usuarios totales"
+                  value={data.totalUsers.toLocaleString('es-CO')}
+                  icon={<Users />}
                   accentColor="#006A75"
                 />
                 <KpiCard
-                  title="Comisión ganada"
-                  value={formatCOPCompact(data.revenue.commissionTotal)}
-                  subtitle={`Bruto: ${formatCOPCompact(data.revenue.grossTotal)}`}
-                  icon={<DollarSign />}
+                  title="Tutores"
+                  value={data.totalTutors.toLocaleString('es-CO')}
+                  icon={<UserCheck />}
                   accentColor="#F97316"
                 />
                 <KpiCard
-                  title="NPS Score"
-                  value={`${data.nps.score > 0 ? '+' : ''}${data.nps.score}`}
-                  subtitle={`★ ${data.nps.averageRating.toFixed(1)} prom · ${data.nps.totalReviews} reseñas`}
-                  icon={<Star />}
-                  accentColor={
-                    data.nps.score >= 50 ? '#22C55E' : data.nps.score >= 0 ? '#F59E0B' : '#EF4444'
-                  }
+                  title="Estudiantes"
+                  value={data.totalLearners.toLocaleString('es-CO')}
+                  icon={<GraduationCap />}
+                  accentColor="#6366F1"
                 />
                 <KpiCard
-                  title="Usuarios activos"
-                  value={data.users.totalUsers.toLocaleString('es-CO')}
-                  subtitle={`${data.users.totalTutors} tutores · ${data.users.totalLearners} learners`}
-                  icon={<Users />}
-                  accentColor="#6366F1"
+                  title="Cursos activos"
+                  value={data.totalCourses.toLocaleString('es-CO')}
+                  icon={<BookOpen />}
+                  accentColor="#22C55E"
                 />
               </>
             ) : null}
-          </div>
-        </section>
-
-        {/* Charts row 1 */}
-        <section className="space-y-3">
-          <SectionHeader title="Actividad y rendimiento" description="Tendencias de sesiones e ingresos diarios" />
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <SessionsChart data={data?.sessions.byDay ?? []} isLoading={isLoading} />
-            <RevenueChart data={data?.revenue.byDay ?? []} isLoading={isLoading} />
-          </div>
-        </section>
-
-        {/* Charts row 2 */}
-        <section className="space-y-3">
-          <SectionHeader title="Satisfacción y crecimiento" description="NPS, calificaciones y nuevos usuarios registrados" />
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <NpsChart
-              score={data?.nps.score ?? 0}
-              distribution={data?.nps.distribution ?? []}
-              totalReviews={data?.nps.totalReviews ?? 0}
-              isLoading={isLoading}
-            />
-            <UserGrowthChart data={data?.users.growthByDay ?? []} isLoading={isLoading} />
-          </div>
-        </section>
-
-        {/* Table + pie */}
-        <section className="space-y-3">
-          <SectionHeader title="Tutores destacados" description="Top 5 tutores por ingresos generados este período" />
-          <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-            <div className="xl:col-span-3">
-              <TopTutorsTable data={data?.topTutors ?? []} isLoading={isLoading} />
-            </div>
-            <div className="xl:col-span-2">
-              <BookingStatusChart data={data?.sessions.byStatus ?? []} isLoading={isLoading} />
-            </div>
           </div>
         </section>
 
