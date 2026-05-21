@@ -22,5 +22,6 @@ export function useAdminMetrics(params: MetricsQueryParams) {
       return fetchAdminMetrics(params);
     },
     staleTime: 5 * 60 * 1000,
+    enabled: !!(params.from && params.to),
   });
 }

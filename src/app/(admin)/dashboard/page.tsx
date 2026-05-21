@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BookOpen, RefreshCw, Users, GraduationCap, UserCheck } from 'lucide-react';
 import { AdminTopBar } from '@/components/layout/AdminTopBar';
 import { KpiCard, KpiCardSkeleton } from '@/components/dashboard/KpiCard';
@@ -19,7 +19,12 @@ function SectionHeader({ title, description }: { title: string; description?: st
 }
 
 export default function DashboardPage() {
-  const [params, setParams] = useState<MetricsQueryParams>(() => getPresetRange('30d'));
+  const [params, setParams] = useState<MetricsQueryParams>({ from: '', to: '' });
+
+  useEffect(() => {
+    setParams(getPresetRange('30d'));
+  }, []);
+
   const { data, isLoading, isError, refetch, isFetching } = useAdminMetrics(params);
 
   return (
